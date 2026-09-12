@@ -1,20 +1,35 @@
-# CSPC Lab A
+# CSPC — Computer Science for Physics and Chemistry
 
-# CSPC Lab Reports
+My coursework repository. Each practical is under PW<n>/Lab <X>/.
 
-## PW1 --- Lab A: Radioactive Decay & Vectorization
+## Setup
+Create and activate the environment for a given lab:
+```bash
+conda env create -f PW1/Lab A/environment.yml
+conda activate cspc
 
-### 1. Test Results
-All 3 unit tests in `PW1/Lab A/test_decay.py` passed successfully using `pytest`:
-- `test_starts_at_N0`: Verified initial atom count.
-- `test_negative_rate_raises_value_error`: Confirmed `ValueError` is raised for negative rates (`lam < 0`).
-- `test_simulation_average_close_to_theoretical`: Validated that simulated decay aligns with theoretical $N(t) = N_0 e^{-\lambda t}$ within tolerance.
+What I built:
 
-### 2. Speed Comparison
-Running `PW1/Lab A/speed.py` with $N_0 = 200,000$ atoms over 200 steps produced the following timings:
-- **Pure-Python Loop (`simulate_loop`):** ~2.15 seconds
-- **Vectorized NumPy (`simulate`):** ~0.05 seconds
-- **Speedup Factor:** NumPy version ran approximately **40x to 50x faster** than the pure Python loop.
+    Created a radioactive decay simulation using both a pure-Python loop and a vectorized NumPy implementation, along with unit tests using pytest.
 
-### 3. Conclusion
-Vectorizing calculations with NumPy significantly reduces runtime compared to standard Python loops. NumPy offloads iteration loops to compiled C code and operates on contiguous memory blocks, avoiding high Python dynamic type checks and loop overhead during array operations.
+Speed comparison (loop vs NumPy):
+
+    loop : 2.15 s
+
+    numpy : 0.05 s
+
+    speed-up: ~43 x faster
+
+Tests: all passing? yes
+
+Conclusion:
+
+    Vectorizing calculations with NumPy drastically speeds up simulation time compared to standard Python loops.
+
+    NumPy offloads iteration loops to optimized C-level code, avoiding the heavy overhead of Python's dynamic typing and pointer chasing.
+
+Reproducibility (Stretch Goal):
+
+    Partner tested: Yes
+
+    Results: Ran successfully on partner's machine without modifications after setting up the cspc Conda environment.
