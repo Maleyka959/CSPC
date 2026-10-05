@@ -55,3 +55,12 @@ Differentiation enhances measurement errors: the double use of this operation to
 
 The largest difference between the original and recovered position was 0.78 meters, which is well within the expected threshold and confirms that integration successfully suppressed the noise.
 
+
+
+### PW2 Lab B — Part 2B Results: Harder Landscape
+* **Do the methods agree?** 
+  No. On a complex landscape with multiple stationary points, the methods do not automatically agree. Gradient descent and SLSQP find local minima depending on the basin of attraction, whereas Newton's method simply finds roots of the derivative ($g'(x) = 0$), meaning it can land on local maxima as well as minima.
+* **Did Newton land on a minimum or another stationary point?** 
+  It depends on the starting point. Starting from $x_0 = 0$, Newton landed on a **local maximum** ($g''(x) < 0$). Starting from $x_0 = 2$, it landed on a **local minimum** ($g''(x) > 0$), because Newton's method targets any stationary point where the derivative is zero without checking curvature unless explicitly programmed to do so.
+* **How did the starting point change the result?** 
+  Because $g(x)$ has multiple local extrema, the starting point determines which "basin of attraction" the algorithm enters. A different $x_0$ can cause gradient descent and Newton to converge to completely different local minima or even a maximum.
