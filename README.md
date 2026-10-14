@@ -69,3 +69,44 @@ The largest difference between the original and recovered position was 0.78 mete
 - **Part 3 (Reaction Kinetics):** Fitted the first-order rate constant $k$ using `scipy.optimize.minimize` (SLSQP), obtaining $k \approx 0.2618$ (saved as `kinetics.png`).
 - **Part 4 (Chemical Equilibrium):** Solved for the reaction extent $x$ of $\text{H}_2 + \text{I}_2 \rightleftharpoons 2\text{HI}$ ($K = 15.6$) using `scipy.optimize.newton` and SLSQP. Both methods agreed at $x \approx 0.664$, yielding equilibrium amounts $\text{H}_2 = \text{I}_2 \approx 0.336\text{ mol}$ and $\text{HI} \approx 1.327\text{ mol}$ (saved as `equilibrium.png`).
 - **Part 5 (Titration Equivalence Point):** Located the equivalence point at approximately $50\text{ mL}$ by finding the maximum numerical slope ($\text{dpH/dV}$) of the titration curve using `np.gradient` and `np.argmax` (saved as `titration.png`).
+
+
+
+# Practical Work 3 — Report
+
+## Dataset 1: Cleveland Heart Disease (`Heart_disease_cleveland_new.csv`)
+
+### 1. Dataset Overview & Session 1: Characterising the Data
+* **Shape:** 303 rows, 14 columns.
+* **Continuous Variables Analyzed:** `age`, `chol`, `trestbps`, `thalach`.
+* **Normality Tests (Shapiro-Wilk, alpha = 0.05):**
+  * `age`: Stat = 0.9865, $p = 0.0061$ (Approximately normal with minor deviation).
+  * `chol`: Stat = 0.9473, $p = 5.91 \times 10^{-9}$ (Non-normal, right-skewed).
+  * `trestbps`: Stat = 0.9665, $p = 1.80 \times 10^{-6}$ (Non-normal, right-skewed).
+  * `thalach`: Stat = 0.9765, $p = 7.00 \times 10^{-5}$ (Non-normal).
+* **Methodological Implication:** Because key variables violate normality, non-parametric methods (Mann-Whitney U test, Spearman correlation) were selected for Session 2.
+
+### 2. Session 2: Draw Conclusions
+* **Task 4 (`thalach` vs `target`):**
+  * Healthy Group (`0`): Mean = **158.38 bpm** ($\pm 1.50$ SEM).
+  * Heart Disease Group (`1`): Mean = **139.26 bpm** ($\pm 1.92$ SEM).
+  * **Test Result:** Mann-Whitney U test statistic = $16,989.5$, $p = 1.86 \times 10^{-13}$. 
+  * **Conclusion:** Healthy patients achieve a statistically significant higher maximum heart rate than those with heart disease, confirmed visually by non-overlapping error bars in `thalach_by_target.png`.
+* **Task 5 (`age` vs `thalach`):**
+  * **Correlation:** Pearson $r = -0.394$ ($p = 1.11 \times 10^{-12}$).
+  * **Interpretation:** Moderate negative correlation. Maximum heart rate decreases systematically as age increases (`age_vs_thalach.png`).
+* **Bonus (Category Predictability):**
+  * The `target` column exhibits a balanced distribution (54.1% healthy, 45.9% disease), yielding a high entropy (~0.99) and reflecting high unpredictability.
+
+---
+
+## Dataset 2: A Chemical-Exposure Mystery (`chemicals_cancer.csv`)
+
+### 6. The Naive Analysis
+* **Findings:** Cadmium showed a very strong naive correlation with tumour malignancy ($r = 0.88$), while benzene showed a moderate correlation ($r = 0.39$).
+* **Face-Value Conclusion:** At first glance, cadmium appeared to be the primary driver of malignancy.
+
+### 7. Confounding Analysis & True Cause
+* **Method:** Controlled for potential confounding by `pollution_index` by restricting the analysis to a narrow pollution bracket ($45 \le \text{pollution\_index} \le 55$).
+* **Findings:** When pollution was held constant, cadmium's correlation with malignancy completely vanished ($r = -0.04$), whereas benzene's correlation rose to $r = 0.67$. Furthermore, cadmium tracks almost perfectly with general area pollution ($r = 0.98$).
+* **Conclusion:** **Benzene is the true biological cause** of malignancy. **Cadmium only looked guilty** due to confounding with area pollution.
