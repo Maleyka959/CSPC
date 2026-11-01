@@ -1,0 +1,37 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job          count
+---------  -------
+all              1
+session_a        1
+total            2
+
+Select jobs to execute...
+
+[Sun Nov  1 15:19:32 2026]
+rule session_a:
+    input: data/concrete.csv, sessionA.py
+    output: results/A_metrics.csv
+    jobid: 1
+    reason: Updated input files: sessionA.py
+    resources: tmpdir=/tmp
+
+[Sun Nov  1 15:19:40 2026]
+Finished job 1.
+1 of 2 steps (50%) done
+Select jobs to execute...
+
+[Sun Nov  1 15:19:40 2026]
+localrule all:
+    input: results/A_metrics.csv, results/B_agreement.csv
+    jobid: 0
+    reason: Input files updated by another job: results/A_metrics.csv
+    resources: tmpdir=/tmp
+
+[Sun Nov  1 15:19:40 2026]
+Finished job 0.
+2 of 2 steps (100%) done
+Complete log: .snakemake/log/2026-11-01T151931.782922.snakemake.log
