@@ -218,3 +218,38 @@ print(agreement_df)
 # Save agreement table to results/
 agreement_df.to_csv("results/B_agreement.csv", index=False)
 print("\nAgreement table successfully saved to 'results/B_agreement.csv'")
+
+# ==========================================
+# Bonus Task: What do labels buy you?
+# ==========================================
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# 1. Split the wines with test_size=0.25, random_state=42, stratify=cultivar
+X_train_b, X_test_b, y_train_b, y_test_b = train_test_split(
+    X, cultivar, test_size=0.25, random_state=42, stratify=cultivar
+)
+
+# 2. Model 1: Scaled Data + KNN(5)
+model_scaled_knn = make_pipeline(
+    StandardScaler(),
+    KNeighborsClassifier(n_neighbors=5)
+)
+model_scaled_knn.fit(X_train_b, y_train_b)
+acc_scaled = model_scaled_knn.score(X_test_b, y_test_b)
+
+# 3. Model 2: Scaled Data + PCA(2) + KNN(5)
+model_pca_knn = make_pipeline(
+    StandardScaler(),
+    PCA(n_components=2),
+    KNeighborsClassifier(n_neighbors=5)
+)
+model_pca_knn.fit(X_train_b, y_train_b)
+acc_pca = model_pca_knn.score(X_test_b, y_test_b)
+
+print("\n--- Bonus Task: Supervised Accuracies ---")
+print(f"Full Scaled Features + KNN Test Accuracy: {acc_scaled:.4f}")
+print(f"PCA (2 components) + KNN Test Accuracy: {acc_pca:.4f}")

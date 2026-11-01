@@ -443,3 +443,16 @@ The dataset used is the *Concrete Compressive Strength* dataset from the UCI Mac
   ```bash
   snakemake --cores 1
 
+### Bonus Task: What do labels buy you? (Supervised vs. Unsupervised)
+
+- **Supervised Test Accuracies:**
+  * **Full Scaled Features + KNN ($K=5$):** Achieved **0.9333** (93.33%) test accuracy.
+  * **PCA (2 components) + KNN ($K=5$):** Achieved **0.9333** (93.33%) test accuracy.
+
+- **Comparison with Unsupervised Agreement (from Task B6):**
+  * The unsupervised K-Means agreement score was **0.9663** (96.63%).
+  * Interestingly, the unsupervised K-Means agreement score slightly outperformed the supervised KNN test accuracy on this specific random split. Generally, supervised models are explicitly trained using true class labels (`cultivar`) to optimize decision boundaries, but sample splits and hyperparameter choices can cause slight variations.
+
+- **Why is this comparison not completely fair?**
+  * **Information Leakage / Supervision Advantage:** Supervised models are given direct access to the true target labels (`cultivar`) during training to guide their parameter tuning and neighborhood classification. 
+  * **Unsupervised Handicap:** Unsupervised K-Means never sees the labels during training; it clusters the data purely based on geometric distance, and the "agreement score" is only computed *after the fact* by matching clusters to their most common true cultivar. Comparing a fully supervised classifier directly to an unsupervised clustering algorithm is inherently asymmetrical.
