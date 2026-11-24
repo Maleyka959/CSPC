@@ -456,3 +456,111 @@ The dataset used is the *Concrete Compressive Strength* dataset from the UCI Mac
 - **Why is this comparison not completely fair?**
   * **Information Leakage / Supervision Advantage:** Supervised models are given direct access to the true target labels (`cultivar`) during training to guide their parameter tuning and neighborhood classification. 
   * **Unsupervised Handicap:** Unsupervised K-Means never sees the labels during training; it clusters the data purely based on geometric distance, and the "agreement score" is only computed *after the fact* by matching clusters to their most common true cultivar. Comparing a fully supervised classifier directly to an unsupervised clustering algorithm is inherently asymmetrical.
+
+
+# PW5: Signal Processing — Where Was the Earthquake, and How Strong?
+
+## Step 1: Look at the Record
+
+* **Figures:** `step1_channels_full.png` and `step1_first_60s.png`.
+* **Observations Across Channels (0–300 s):**
+  * The 300-second (`30,000` samples at fs = 100 Hz) recording shows quiet background levels before roughly 110 s, followed by an initial arrival and then a much larger burst of shaking starting around 145–150 s that gradually decays.
+  * The first, weaker shaking appears most prominently on the vertical **Z** channel (reaching roughly ±4 mm/s around 110 s), while it is much smaller on **N** and **E**.
+  * The later, stronger shaking is largest on the horizontal channels **N** (reaching over +-12–14 mm/s) and **E** (reaching around ±15 mm/s), compared to roughly ±5–6 mm/s on **Z**.
+* **First 60 s Zoom (Why the station isn't completely still):**
+  * Zooming into the first 60 seconds shows continuous oscillations around ±0.005 to 0.007 mm/s with finer jitter riding on top.
+  * **Why:** Even with no earthquake occurring, a sensitive broadband seismometer continuously records ambient environmental vibrations—such as ocean microseisms, wind/weather coupling, cultural/traffic activity, and minor instrumental noise.
+
+---
+
+## Step 2: The Spectrum — What Frequencies Are in the Record?
+
+### 2(a) Array Index vs. Frequency (`fftfreq`)
+
+* **Figure:** `step2a_fft_index_vs_freq.png`.
+* **What `fftfreq` adds:** Raw array indices (`0` to `29,999`) are just sample positions and depend on record length N, whereas `np.fft.fftfreq(N, d=1/fs)` converts them into physical frequencies in **Hz** (spanning -50 Hz to +50 Hz for fs = 100 Hz).
+* **Why the spectrum is mirrored around `0 Hz`:** Because the velocity channel `Z` is a **real-valued** signal, its Discrete Fourier Transform satisfies Hermitian symmetry (X[N-k] = X*[k]), so magnitudes are symmetric across negative and positive frequencies (with high indices near `30,000` corresponding to negative frequencies approaching `0 Hz`).
+
+### 2(b) Log–Log Spectrum: Quiet Window vs. Full Record
+
+* **Figure:** `step2b_loglog_spectrum.png`.
+* **Background noise peak (first 60 s):** The quiet-window spectrum peaks around **0.1–0.4 Hz** (reaching above 10⁻³ mm/s), which is the microseism band driven by ocean waves interacting with coastlines.
+* **Where the earthquake adds most energy:** Comparing the full record to the first 60 seconds, the earthquake elevates amplitudes across low and intermediate frequencies, with the strongest energy concentrated roughly from **~0.1 Hz up to a few Hz** (around 0.1–10 Hz), before rolling off toward higher frequencies near 50 Hz.
+* **Why:** Seismic waves from an earthquake fault rupture and propagate through rock layers with finite duration and attenuation, concentrating most of their kinetic energy in low-to-moderate seismic frequencies rather than uniform white noise across all frequencies.
+
+## Step 3: The Inverse Transform and a Manual Band-Pass Filter
+
+### 3(a) Round-Trip Check (`fft` → `ifft`)
+* **Check:** `np.allclose(Z, np.fft.ifft(np.fft.fft(Z)).real)` evaluates to `True`.
+* **Why frequency-domain filtering relies on this:** Because the Fast Fourier Transform is reversible, we can transform a time-domain signal into frequency components, modify or zero out specific unwanted frequencies, and apply `ifft` to recover a clean time-domain signal without distorting the remaining frequencies.
+
+### 3(b) Band-Pass Filter (`0.5 Hz` to `10 Hz`)
+* **Justification from Step 2 spectra:** 
+  * In the log–log spectrum from Step 2, the ambient background microseism noise peaks below `0.5 Hz` (around `0.1–0.4 Hz`), so setting `a = 0.5 Hz` cuts out that continuous ocean-wave background swell.
+  * Most of the earthquake's seismic energy lies between `0.5 Hz` and `10 Hz`, while above `10 Hz` the signal drops into high-frequency noise, so setting `b = 10 Hz` removes high-frequency jitter while keeping the P- and S-wave arrivals sharp.
+
+### 3(c) What Was Removed (`Z - clean`)
+* **Figure:** `step3c_removed_z.png`
+* **What is visible in the removed signal:** 
+  * Before `110 s`, it shows the steady, slow-oscillating microseism background waves that were present in the quiet window.
+  * Around `110 s` (P-wave arrival), it contains high-frequency components (`> 10 Hz`) removed from the sharp onset.
+  * After `145 s`, it shows large, long-period surface waves (`< 0.5 Hz`, swinging up to around `±3 mm/s`) that arrive later in the earthquake and oscillate slowly.
+
+---
+
+## Step 4: The Envelope — How Strong Is the Shaking at Each Moment?
+
+* **Figures:** `step4_envelopes_0p5s.png` and `step4_window_comparison.png`
+* **Observations (`0.5 s` window):**
+  * The filtered **Z** envelope (`step4_envelopes_0p5s.png`) shows two distinct bursts of shaking: a first sharp peak around `110 s` (reaching `~1.8 mm/s`) and a second sustained burst starting around `145 s` (reaching `~1.7 mm/s`).
+  * The filtered **horizontal** envelope (`sqrt(N^2 + E^2)`) stays very small during the first arrival (`~0.5 mm/s` around `110 s`) and jumps dramatically during the second arrival around `145–150 s` (peaking around `8 mm/s`).
+* **Window Length Comparison (`0.05 s`, `0.5 s`, and `5.0 s`):**
+  * **When the window is too short (`0.05 s`):** The envelope stays very jagged and noisy (spiking above `3.2 mm/s`), following individual wave cycles rather than a smooth trend of shaking intensity.
+  * **When the window is too long (`5.0 s`):** The envelope over-smooths the signal, lowering peak amplitudes (down to `~0.9–1.1 mm/s`) and smearing out the sharp onset times, making the shaking appear to start earlier than it actually does.
+
+## Step 5: Arrival Times — The Start of the Shaking, Not Its Maximum
+
+* **Figure:** `step5_arrivals.png`
+* **P and S Arrivals:** The P-wave arrives at `t_P = 108.42 s` (5% threshold on the filtered Z envelope) and the S-wave arrives at `t_S = 144.08 s` (10% threshold after `t_P + 2 s` on the filtered horizontal envelope), giving a lag time `t_S - t_P = 35.66 s`.
+* **Arrival Time vs. Maximum:** The horizontal envelope peaks at `152.03 s` (found with `find_peaks`), which is `7.95 s` after `t_S` because shaking builds up after the initial wave arrival due to rupture duration, wave interference, and scattering.
+* **Why Using the Maximum Gives a Wrong Distance:** Taking `152.03 s` instead of `t_S = 144.08 s` inflates `t_S - t_P` by `7.95 s`, which would overestimate the earthquake distance by roughly `68.2 km` (`7.95 * 8.58 km`).
+
+## Step 6: How Far Away Was the Earthquake?
+
+* **Estimated Distance R:** Using `v_P = 6.2 km/s` and `v_S = 3.6 km/s` with `t_S - t_P = 35.66 s` gives `R = 306.13 km`.
+* **Effect of 1 s Uncertainty in t_S:** A `1 s` uncertainty in `t_S` changes `R` by `+/- 8.58 km`.
+* **Origin Time:** The earthquake origin time is `59.04 s` (`108.42 - 306.13 / 6.2`).
+
+## Step 7: The Spectrogram — Which Frequencies, and When
+
+* **Figure:** `step7_spectrogram_z.png`
+* **Wave Arrivals in the Spectrogram:** The P-wave onset appears around `108 s` (`t_P = 108.42 s`), the S-wave onset appears around `144 s` (`t_S = 144.08 s`), and later, slower surface waves follow after `~150 s`.
+* **Highest vs. Lowest Frequencies:** The P-wave carries higher frequencies extending across several Hz up to `10 Hz`, while the later surface waves and persistent background band (`~0.2–0.5 Hz`) have strong low-frequency energy.
+* **What the Spectrogram Shows That Step 2 Cannot:** The single spectrum in Step 2 averages frequency content across time and cannot show when each arrival occurs, whereas the spectrogram shows how frequencies evolve over time.
+
+## Step 8: The Magnitude
+
+* **PGV and Magnitude M:** The raw horizontal peak ground velocity is `PGV = 1.510491 cm/s`, which together with `R = 306.13 km` in `M = (log10(PGV [cm/s]) + log10(R [km]) + 1.0) / 0.55` gives an estimated magnitude of `M = 6.66`.
+* **Why `log10(R)` Is in the Formula:** Seismic wave amplitudes decrease with distance due to geometric spreading and attenuation; without `log10(R)`, the same earthquake recorded twice as far away would appear smaller and underestimate magnitude.
+* **PGV Increase for +1 Magnitude Unit:** At the same distance, increasing `M` by `1.0` unit increases `log10(PGV)` by `0.55`, so PGV increases by a factor of `10^0.55 ≈ 3.55` times.
+
+## Step 9: The Whole System
+
+* **Pipeline Scripts:** `analyse.py` runs an unchanged `analyse(csv_file)` function on `data/seismogram_A.csv` and `data/seismogram_B.csv` to save `results/events.csv`, and `report.py` reads `results/events.csv` to write `results/report.txt`.
+* **Which Was Closer and Stronger:** `seismogram_B` was closer (`R = 156.07 km` vs. `306.13 km` for `seismogram_A`), while `seismogram_A` was stronger (`M = 6.66` vs. `M = 5.36` for `seismogram_B`).
+
+## Step 10: Automate It with Snakemake
+
+* **Snakemake Workflow:** `Snakefile` defines `analyse`, `report`, and `all` with input and output file dependencies so steps run in order when needed.
+* **10(a) Clean Run (`rm -rf results && snakemake --cores 1`):** Both `analyse` and `report` run because `results/events.csv` and `results/report.txt` do not exist yet.
+* **10(b) Immediate Rerun:** Snakemake reports that nothing needs to be done because all output files already exist and are up to date relative to their inputs.
+* **10(c) Editing Only Wording in `report.py`:** Only `report` (and `all`) reruns because `report.py` is newer than `results/report.txt`, while `results/events.csv` is still up to date.
+* **10(d) Changing Cut-Off `b` in `analyse.py`:** Both `analyse` and `report` rerun because changing `analyse.py` updates `results/events.csv`, making `results/report.txt` out of date; selective dependency tracking keeps downstream results consistent without rerunning untouched steps unnecessarily.
+
+## Bonus: Your Own Seismometer at Home (phyphox)
+
+* **Figures:** `bonus_phone_envelope.png` and `bonus_phone_magnitude_vs_energy.png`.
+* **Uneven Sampling and Interpolation:** Checking `np.diff(t)` on `Raw Data.csv` shows uneven time steps ranging from `0.002583 s` to `0.022462 s` (mean `0.002587 s`), so `np.interp` places the acceleration data onto an evenly spaced time grid before computing the FFT and applying the filter.
+* **Spectrum and Gravity (0 Hz):** The raw spectrum has a `0 Hz` (DC) amplitude of `9.894 m/s^2` from constant Earth gravity, which is removed by the band-pass filter (`0.5–15 Hz`) along with slow drift and high-frequency noise so the envelope highlights transient impacts.
+* **M_phone vs. log10(mgh):** For a `1.5 kg` bottle (`g = 9.81 m/s^2`) dropped from `10, 20, 40, and 80 cm` (`E = 1.47 J, 2.94 J, 5.89 J, 11.77 J`; `log10(mgh) = 0.168, 0.469, 0.770, 1.071`), the four detected peaks at `5.37 s`, `9.35 s`, `15.25 s`, and `39.66 s` give amplitudes of `0.0627 m/s^2`, `0.0826 m/s^2`, `0.0617 m/s^2`, and `0.0671 m/s^2`. Using `A1 = 0.0617 m/s^2` as the minimum peak gives `M_phone = log10(A / A1)` values of `0.007`, `0.127`, `0.000`, and `0.037` (with a slight/irregular variation across drop heights, `r = -0.085`, due to local floor coupling, impact damping, and ambient vibrations at `~1 m` distance).
+* **Connection to Step 8 Magnitude:** Both `M_phone` and the Step 8 magnitude `M` use a base-10 logarithm of recorded ground motion amplitude, but `M_phone` is a relative ratio (`log10(A / A1)`) against the smallest local peak with no distance term, whereas Step 8 magnitude `M` uses `PGV` and includes `+ log10(R)` to account for amplitude decay with earthquake distance `R`.

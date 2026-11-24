@@ -1,0 +1,8 @@
+Earthquake Summary Report
+========================
+
+seismogram_A: t_P = 108.41 s, t_S = 144.08 s, origin = 59.02 s, distance R = 306.21 km, PGV = 1.5105 cm/s, magnitude M = 6.66.
+seismogram_B: t_P = 84.26 s, t_S = 102.42 s, origin = 59.12 s, distance R = 155.90 km, PGV = 0.5711 cm/s, magnitude M = 5.36.
+
+Nearest earthquake: seismogram_B (R = 155.90 km).
+Strongest earthquake: seismogram_A (M = 6.66).
